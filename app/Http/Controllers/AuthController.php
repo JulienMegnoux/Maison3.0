@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use App\Models\User;
+use App\Models\UserLog;
 use App\Mail\VerificationCodeMail;
 
 class AuthController extends Controller
@@ -90,11 +91,25 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->route('accueil')->with('success', 'Connexion réussie !');
+
+            UserLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'connexion',
+                'description' => 'Connexion réussie à la plateforme',
+            ]);
+
+            return redirect()->route('menu')->with('success', 'Connexion réussie !');
         }
 
         return back()->withErrors([
             'email' => 'Identifiants incorrects.',
         ]);
+    }
+
+    public function showMenu()
+    {
+        $user = Auth::user();
+        $pieces = $user->pieces()->with('appareils')->get();
+        return view('menu', compact('pieces'));
     }
 }
